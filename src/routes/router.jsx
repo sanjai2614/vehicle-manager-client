@@ -1,29 +1,31 @@
+import { lazy, Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
-
-import Login from "../pages/auth/Login";
-import Register from "../pages/auth/Register";
-
-import Drivers from "../pages/user/Drivers";
-
-import Dashboard from "../pages/admin/Dashboard";
-import Users from "../pages/admin/Users";
-import AllDrivers from "../pages/admin/AllDrivers";
-import DeletedDrivers from "../pages/admin/DeletedDrivers";
-
 import DashboardLayout from "../components/layout/DashboardLayout";
+import Loader from "../components/common/Loader";
+
+// Lazy loaded pages
+const Login = lazy(() => import("../pages/auth/Login"));
+const Register = lazy(() => import("../pages/auth/Register"));
+
+const Drivers = lazy(() => import("../pages/user/Drivers"));
+
+const Dashboard = lazy(() => import("../pages/admin/Dashboard"));
+const Users = lazy(() => import("../pages/admin/Users"));
+const AllDrivers = lazy(() => import("../pages/admin/AllDrivers"));
+const DeletedDrivers = lazy(() => import("../pages/admin/DeletedDrivers"));
+
+const withSuspense = (Component) => (
+  <Suspense fallback={<Loader />}>
+    <Component />
+  </Suspense>
+);
 
 const router = createBrowserRouter([
   // Public Routes
-  {
-    path: "/login",
-    element: <Login />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
-  },
+  { path: "/login", element: withSuspense(Login) },
+  { path: "/register", element: withSuspense(Register) },
 
   // User Routes
   {
@@ -32,17 +34,12 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <DashboardLayout />,
-        children: [
-          {
-            index: true,
-            element: <Drivers />,
-          },
-        ],
+        children: [{ index: true, element: withSuspense(Drivers) }],
       },
     ],
   },
 
-//  Admin Routes
+  // Admin Routes
   {
     element: <ProtectedRoute allowedRoles={["admin"]} />,
     children: [
@@ -50,22 +47,10 @@ const router = createBrowserRouter([
         path: "/admin",
         element: <DashboardLayout />,
         children: [
-          {
-            index: true,
-            element: <Dashboard />,
-          },
-          {
-            path: "users",
-            element: <Users />,
-          },
-          {
-            path: "drivers",
-            element: <AllDrivers />,
-          },
-          {
-            path: "deleted-drivers",
-            element: <DeletedDrivers />,
-          },
+          { index: true, element: withSuspense(Dashboard) },
+          { path: "users", element: withSuspense(Users) },
+          { path: "drivers", element: withSuspense(AllDrivers) },
+          { path: "deleted-drivers", element: withSuspense(DeletedDrivers) },
         ],
       },
     ],
