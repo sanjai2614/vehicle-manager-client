@@ -16,7 +16,7 @@ const ActionButtons = ({
       icon: Eye,
       show: showView,
       onClick: onView,
-      className: "text-blue-600 hover:bg-blue-50",
+      className: "text-blue-600 bg-blue-100 hover:bg-blue-200",
     },
     {
       key: "edit",
@@ -24,7 +24,7 @@ const ActionButtons = ({
       icon: Pencil,
       show: showEdit,
       onClick: onEdit,
-      className: "text-amber-600 hover:bg-amber-50",
+      className: "text-amber-600 bg-amber-100 hover:bg-amber-200",
     },
     {
       key: "delete",
@@ -32,7 +32,7 @@ const ActionButtons = ({
       icon: Trash2,
       show: showDelete,
       onClick: onDelete,
-      className: "text-red-600 hover:bg-red-50",
+      className: "text-red-600 bg-red-100 hover:bg-red-200",
     },
   ];
 

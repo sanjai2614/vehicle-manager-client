@@ -1,30 +1,13 @@
-
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  UserPlus,
-  Users,
-  Upload,
-  ImagePlus,
-  Save,
-  X,
-  Pencil,
-  Mail,
-  Phone,
-  Calendar,
-  CreditCard,
-  Car,
-  User,
-} from "lucide-react";
+import { UserPlus, Users, Upload, ImagePlus, Save, X } from "lucide-react";
 
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Table from "../../components/common/Table";
 import SearchInput from "../../components/common/SearchInput";
-import ErrorMessage from "../../components/common/ErrorMessage";
 import ActionButtons from "../../components/common/ActionButtons";
-import Modal from "../../components/common/Modal";
 
 import { driverSchema } from "../../validations/driver.validation";
 import {
@@ -65,28 +48,8 @@ const getApiErrorMessage = (error, fallback) => {
   return fallback;
 };
 
-const DetailItem = ({ icon: Icon, label, value }) => (
-  <div className="flex items-start gap-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
-    <div className="rounded-lg bg-white p-2 text-blue-700 shadow-sm">
-      <Icon size={17} />
-    </div>
-
-    <div className="min-w-0">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className="mt-1 break-words text-sm font-semibold text-gray-800">
-        {value || "Not provided"}
-      </p>
-    </div>
-  </div>
-);
-
 const Drivers = () => {
-  const {
-    data: drivers = [],
-    isLoading,
-    isError,
-    error,
-  } = useDrivers();
+  const { data: drivers = [], isLoading, isError, error } = useDrivers();
 
   const createMutation = useCreateDriver();
   const updateMutation = useUpdateDriver();
@@ -95,7 +58,6 @@ const Drivers = () => {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editData, setEditData] = useState({});
-  const [viewingDriver, setViewingDriver] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
 
   const {
@@ -123,12 +85,10 @@ const Drivers = () => {
   }, [selectedAvatar]);
 
   useEffect(() => {
-  if (isError) {
-    showToast.error(
-      getApiErrorMessage(error, "Unable to load drivers.")
-    );
-  }
-}, [isError, error]);
+    if (isError) {
+      showToast.error(getApiErrorMessage(error, "Unable to load drivers."));
+    }
+  }, [isError, error]);
 
   // Search
   const filteredDrivers = drivers.filter((driver) =>
@@ -142,7 +102,7 @@ const Drivers = () => {
     ]
       .join(" ")
       .toLowerCase()
-      .includes(search.toLowerCase())
+      .includes(search.toLowerCase()),
   );
 
   // Add driver avatar
@@ -174,18 +134,16 @@ const Drivers = () => {
       formData.append("profile_avatar", values.profile_avatar[0]);
     }
 
-   try {
-  await createMutation.mutateAsync(formData);
+    try {
+      await createMutation.mutateAsync(formData);
 
-  reset(initialValues);
-  setAvatarPreview("");
+      reset(initialValues);
+      setAvatarPreview("");
 
-  showToast.success("Driver added successfully!");
-} catch (err) {
-  showToast.error(
-    getApiErrorMessage(err, "Unable to add driver.")
-  );
-}
+      showToast.success("Driver added successfully!");
+    } catch (err) {
+      showToast.error(getApiErrorMessage(err, "Unable to add driver."));
+    }
   };
 
   // Start inline editing
@@ -217,89 +175,75 @@ const Drivers = () => {
   };
 
   // Save inline changes
- const handleSaveEdit = async (id) => {
-  const originalDriver = drivers.find(
-    (driver) => driver.id === id
-  );
+  const handleSaveEdit = async (id) => {
+    const originalDriver = drivers.find((driver) => driver.id === id);
 
-  if (!originalDriver) return;
+    if (!originalDriver) return;
 
-  const changedFields = {};
+    const changedFields = {};
 
-  Object.keys(editData).forEach((field) => {
-    const newValue =
-      field === "age"
-        ? Number(editData[field])
-        : editData[field]?.trim();
+    Object.keys(editData).forEach((field) => {
+      const newValue =
+        field === "age" ? Number(editData[field]) : editData[field]?.trim();
 
-    const oldValue =
-      field === "age"
-        ? Number(originalDriver[field])
-        : originalDriver[field];
+      const oldValue =
+        field === "age" ? Number(originalDriver[field]) : originalDriver[field];
 
-    if (newValue !== oldValue) {
-      changedFields[field] = newValue;
+      if (newValue !== oldValue) {
+        changedFields[field] = newValue;
+      }
+    });
+
+    if (Object.keys(changedFields).length === 0) {
+      handleCancelEdit();
+      return;
     }
-  });
 
-  if (Object.keys(changedFields).length === 0) {
-    handleCancelEdit();
-    return;
-  }
+    if (
+      !editData.driver_name?.trim() ||
+      !editData.email?.trim() ||
+      !editData.phone_number?.trim() ||
+      !editData.license_number?.trim() ||
+      !editData.vehicle_number?.trim() ||
+      !Number.isInteger(Number(editData.age)) ||
+      Number(editData.age) < 18
+    ) {
+      showToast.error("Please enter valid driver details.");
+      return;
+    }
 
-  if (
-    !editData.driver_name?.trim() ||
-    !editData.email?.trim() ||
-    !editData.phone_number?.trim() ||
-    !editData.license_number?.trim() ||
-    !editData.vehicle_number?.trim() ||
-    !Number.isInteger(Number(editData.age)) ||
-    Number(editData.age) < 18
-  ) {
-    showToast.error("Please enter valid driver details.");
-    return;
-  }
+    try {
+      await updateMutation.mutateAsync({
+        id,
+        payload: changedFields,
+      });
 
- try {
-  await updateMutation.mutateAsync({
-    id,
-    payload: changedFields,
-  });
-
-  handleCancelEdit();
-  showToast.success("Driver updated successfully!");
-} catch (err) {
-  showToast.error(
-    getApiErrorMessage(err, "Unable to update driver.")
-  );
-}
-};
+      handleCancelEdit();
+      showToast.success("Driver updated successfully!");
+    } catch (err) {
+      showToast.error(getApiErrorMessage(err, "Unable to update driver."));
+    }
+  };
 
   // Delete driver
   const handleDelete = async (driver) => {
     const confirmed = window.confirm(
-      `Are you sure you want to delete ${driver.driver_name}?`
+      `Are you sure you want to delete ${driver.driver_name}?`,
     );
 
     if (!confirmed) return;
 
-   try {
-  await deleteMutation.mutateAsync(driver.id);
+    try {
+      await deleteMutation.mutateAsync(driver.id);
 
-  if (editingId === driver.id) {
-    handleCancelEdit();
-  }
+      if (editingId === driver.id) {
+        handleCancelEdit();
+      }
 
-  if (viewingDriver?.id === driver.id) {
-    setViewingDriver(null);
-  }
-
-  showToast.success("Driver deleted successfully!");
-} catch (err) {
-  showToast.error(
-    getApiErrorMessage(err, "Unable to delete driver.")
-  );
-}
+      showToast.success("Driver deleted successfully!");
+    } catch (err) {
+      showToast.error(getApiErrorMessage(err, "Unable to delete driver."));
+    }
   };
 
   // Reusable inline input
@@ -314,10 +258,8 @@ const Drivers = () => {
       <input
         type={type}
         value={editData[field] ?? ""}
-        onChange={(event) =>
-          handleEditChange(field, event.target.value)
-        }
-        className="w-full min-w-[100px] rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        onChange={(event) => handleEditChange(field, event.target.value)}
+        className="w-full max-w-30 rounded-lg border border-blue-200 bg-blue-50/50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
       />
     );
   };
@@ -383,7 +325,7 @@ const Drivers = () => {
               onClick={() => handleSaveEdit(driver.id)}
               disabled={updateMutation.isPending}
               title="Save Changes"
-              className="rounded-lg p-2 text-green-600 transition hover:bg-green-50 disabled:opacity-50"
+              className="rounded-lg p-2 text-green-600 transition bg-green-100 hover:bg-green-200 disabled:opacity-50"
             >
               <Save size={17} />
             </button>
@@ -393,14 +335,14 @@ const Drivers = () => {
               onClick={handleCancelEdit}
               disabled={updateMutation.isPending}
               title="Cancel"
-              className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 disabled:opacity-50"
+              className="rounded-lg p-2 text-gray-500 transition bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
             >
               <X size={17} />
             </button>
           </div>
         ) : (
           <ActionButtons
-            onView={() => setViewingDriver(driver)}
+            showView={false}
             onEdit={() => handleEdit(driver)}
             onDelete={() => handleDelete(driver)}
             disabled={deleteMutation.isPending || editingId !== null}
@@ -413,7 +355,6 @@ const Drivers = () => {
 
   return (
     <div className="min-h-screen space-y-7 pb-8">
-
       {/* Page Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
@@ -438,9 +379,7 @@ const Drivers = () => {
 
           <div>
             <p className="text-xs text-gray-500">Total Drivers</p>
-            <p className="text-xl font-bold text-gray-900">
-              {drivers.length}
-            </p>
+            <p className="text-xl font-bold text-gray-900">{drivers.length}</p>
           </div>
         </div>
       </div>
@@ -464,15 +403,6 @@ const Drivers = () => {
           onSubmit={handleSubmit(onSubmit)}
           className="space-y-6 p-5 sm:p-6"
         >
-          {createMutation.error && (
-            <ErrorMessage
-              message={
-                createMutation.error?.response?.data?.message ||
-                "Unable to add driver."
-              }
-            />
-          )}
-
           {/* Avatar */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-gray-300 bg-gray-50">
@@ -568,9 +498,7 @@ const Drivers = () => {
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div className="flex flex-col justify-between gap-4 border-b border-gray-100 px-5 py-5 sm:flex-row sm:items-center sm:px-6">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">
-              Drivers List
-            </h2>
+            <h2 className="text-lg font-bold text-gray-900">Drivers List</h2>
             <p className="mt-1 text-sm text-gray-500">
               View and manage your registered drivers.
             </p>
@@ -586,33 +514,6 @@ const Drivers = () => {
         </div>
 
         <div className="px-5 py-4 sm:px-6">
-          {isError && (
-            <ErrorMessage
-              message={
-                error?.response?.data?.message ||
-                "Unable to load drivers."
-              }
-            />
-          )}
-
-          {updateMutation.error && (
-            <ErrorMessage
-              message={
-                updateMutation.error?.response?.data?.message ||
-                "Unable to update driver."
-              }
-            />
-          )}
-
-          {deleteMutation.error && (
-            <ErrorMessage
-              message={
-                deleteMutation.error?.response?.data?.message ||
-                "Unable to delete driver."
-              }
-            />
-          )}
-
           <Table
             columns={columns}
             data={filteredDrivers}
@@ -627,102 +528,6 @@ const Drivers = () => {
           />
         </div>
       </section>
-
-      {/* Complete Driver Details Modal */}
-      <Modal
-        isOpen={Boolean(viewingDriver)}
-        onClose={() => setViewingDriver(null)}
-        title="Driver Details"
-        description="Complete information about this driver."
-        size="lg"
-      >
-        {viewingDriver && (
-          <div className="space-y-6">
-
-            {/* Profile */}
-            <div className="flex flex-col items-center rounded-2xl bg-blue-50/70 p-6 text-center">
-              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-white text-2xl font-bold text-blue-700 shadow-sm">
-                {viewingDriver.profile_avatar ? (
-                  <img
-                    src={viewingDriver.profile_avatar}
-                    alt={viewingDriver.driver_name}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  viewingDriver.driver_name?.charAt(0)?.toUpperCase()
-                )}
-              </div>
-
-              <h3 className="mt-3 text-lg font-bold text-gray-900">
-                {viewingDriver.driver_name}
-              </h3>
-            </div>
-
-            {/* Personal Details */}
-            <div>
-              <h4 className="mb-3 text-sm font-bold text-gray-900">
-                Personal Information
-              </h4>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <DetailItem
-                  icon={User}
-                  label="Driver Name"
-                  value={viewingDriver.driver_name}
-                />
-
-                <DetailItem
-                  icon={Calendar}
-                  label="Age"
-                  value={viewingDriver.age}
-                />
-
-                <DetailItem
-                  icon={Mail}
-                  label="Email Address"
-                  value={viewingDriver.email}
-                />
-
-                <DetailItem
-                  icon={Phone}
-                  label="Phone Number"
-                  value={viewingDriver.phone_number}
-                />
-              </div>
-            </div>
-
-            {/* Vehicle Details */}
-            <div>
-              <h4 className="mb-3 text-sm font-bold text-gray-900">
-                Vehicle Information
-              </h4>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <DetailItem
-                  icon={CreditCard}
-                  label="License Number"
-                  value={viewingDriver.license_number}
-                />
-
-                <DetailItem
-                  icon={Car}
-                  label="Vehicle Number"
-                  value={viewingDriver.vehicle_number}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end border-t border-gray-100 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setViewingDriver(null)}
-              >
-                Close
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };
