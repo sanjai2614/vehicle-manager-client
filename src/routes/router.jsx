@@ -22,30 +22,28 @@ const withSuspense = (Component) => (
   </Suspense>
 );
 
+
 const router = createBrowserRouter([
   // Public Routes
   { path: "/login", element: withSuspense(Login) },
   { path: "/register", element: withSuspense(Register) },
 
-  // User Routes
+  // Dashboard Layout
   {
-    element: <ProtectedRoute allowedRoles={["user"]} />,
+    element: <DashboardLayout />,
     children: [
+      // User Routes
       {
-        path: "/",
-        element: <DashboardLayout />,
-        children: [{ index: true, element: withSuspense(Drivers) }],
+        element: <ProtectedRoute allowedRoles={["user"]} />,
+        children: [
+          { index: true, element: withSuspense(Drivers) },
+        ],
       },
-    ],
-  },
 
-  // Admin Routes
-  {
-    element: <ProtectedRoute allowedRoles={["admin"]} />,
-    children: [
+      // Admin Routes
       {
-        path: "/admin",
-        element: <DashboardLayout />,
+        path: "admin",
+        element: <ProtectedRoute allowedRoles={["admin"]} />,
         children: [
           { index: true, element: withSuspense(Dashboard) },
           { path: "users", element: withSuspense(Users) },
